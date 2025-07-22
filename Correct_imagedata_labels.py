@@ -27,5 +27,14 @@ def remove_image_data_from_all_json(target_dir, recursive=True):
 if __name__ == "__main__":
     #target_directory = "G:/Gedeelde drives/Team_BioDiv/5_Projecten/2024_Biodiversa_habitatpilot/WP2_3/Inundation/Segmentation_orthos/Cropped_orthos_tiles/Kloosterbeemden/2020"
     #target_directory = "G:/Gedeelde drives/Team_BioDiv/5_Projecten/2024_Biodiversa_habitatpilot/WP2_3/Inundation/Segmentation_orthos/Cropped_orthos_tiles/Kloosterbeemden/2021"
-    target_directory = "D:/2025_LabelMe/Biodiversaplus_HabitatPilot-Inundation-SegmentingOrthophotos/images/Webbekomsbroek/2024"
+    #target_directory = "G:/Gedeelde drives/Team_BioDiv/5_Projecten/2024_Biodiversa_habitatpilot/WP2_3/Inundation/Segmentation_orthos/Cropped_orthos_tiles/Kloosterbeemden/2023"
+    #target_directory = "G:/Gedeelde drives/Team_BioDiv/5_Projecten/2024_Biodiversa_habitatpilot/WP2_3/Inundation/Segmentation_orthos/Cropped_orthos_tiles/Kloosterbeemden/2024"
+
+    #target_directory = "G:/Gedeelde drives/Team_BioDiv/5_Projecten/2024_Biodiversa_habitatpilot/WP2_3/Inundation/Segmentation_orthos/Cropped_orthos_tiles/Schulensmeer/2020"
+    #target_directory = "G:/Gedeelde drives/Team_BioDiv/5_Projecten/2024_Biodiversa_habitatpilot/WP2_3/Inundation/Segmentation_orthos/Cropped_orthos_tiles/Schulensmeer/2021"
+    #target_directory = "G:/Gedeelde drives/Team_BioDiv/5_Projecten/2024_Biodiversa_habitatpilot/WP2_3/Inundation/Segmentation_orthos/Cropped_orthos_tiles/Schulensmeer/2023"
+    target_directory = "G:/Gedeelde drives/Team_BioDiv/5_Projecten/2024_Biodiversa_habitatpilot/WP2_3/Inundation/Segmentation_orthos/Cropped_orthos_tiles/Schulensmeer/2024"
+
+
+
     remove_image_data_from_all_json(target_directory)
