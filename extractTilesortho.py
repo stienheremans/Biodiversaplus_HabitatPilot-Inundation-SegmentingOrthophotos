@@ -205,12 +205,12 @@ def extractAllTiles(folder, ext='.jpg'):
         # 1) make image file & path if necessary
         imgfile = '{}.{}'.format(uid, ext)
         #imgfile = outputfolder / 'Schulensmeer' / '2020' / imgfile # To adapt
-        imgfile = outputfolder / 'Schulensmeer' / '2021' / imgfile 
+        #imgfile = outputfolder / 'Schulensmeer' / '2021' / imgfile 
         #imgfile = outputfolder / 'Schulensmeer' / '2023' / imgfile 
         #imgfile = outputfolder / 'Schulensmeer' / '2024' / imgfile 
 
         #imgfile = outputfolder / 'Webbekomsbroek' / '2020' / imgfile 
-        #imgfile = outputfolder / 'Webbekomsbroek' / '2021' / imgfile 
+        imgfile = outputfolder / 'Webbekomsbroek' / '2021' / imgfile 
         #imgfile = outputfolder / 'Webbekomsbroek' / '2023' / imgfile 
         #imgfile = outputfolder / 'Webbekomsbroek' / '2024' / imgfile 
 
@@ -390,9 +390,10 @@ def markTiles(folder, fLabels=0.1, nTiles=None, nLabelers=10):
 if __name__ == '__main__':
     load_dotenv()
     folder = os.environ['orthofolder']
-    name_tile_file = 'Tiles_ortho_SM_buffer_selected.shp'
+    #name_tile_file = 'Tiles_ortho_SM_buffer_selected.shp'
     #name_tile_file = 'Tiles_ortho_WB_buffer_selected.shp'
     #name_tile_file = 'Tiles_ortho_KB_buffer_selected.shp'
+    name_tile_file = 'Tiles_ortho_WB_buffer_selected_deel2.shp'
 
     bExtractLabelTiles = False
     if bExtractLabelTiles:

@@ -45,6 +45,7 @@ def label_and_diff(processed):
 
     return pd.concat(merged, ignore_index=True)
 
+'''
 def subtract_tiles_and_add_not_inundated(merged, tiles, original_labels):
     tiles = fix_g(tiles)
     original_union = unary_union(original_labels.geometry)
@@ -62,6 +63,166 @@ def subtract_tiles_and_add_not_inundated(merged, tiles, original_labels):
     if not_inundated_polys:
         not_inundated_gdf = gpd.GeoDataFrame(
             {"Label": ["Not inundated"] * len(not_inundated_polys), "geometry": not_inundated_polys},
+            crs=merged.crs
+        )
+        not_inundated_gdf = fix_g(not_inundated_gdf)
+        merged = pd.concat([merged, not_inundated_gdf], ignore_index=True)
+
+    return merged
+
+    '''
+
+def subtract_tiles_and_add_not_inundated(merged, tiles, original_labels):
+    tiles = fix_g(tiles)
+
+    # --- Start of adapted code for original_union ---
+    print("\n--- Starting geometry validation for original_labels.geometry ---")
+    valid_original_geometries = []
+    invalid_original_count = 0
+
+    geometries_to_process = original_labels.geometry
+
+    for i, geom in enumerate(geometries_to_process):
+        if geom is None:
+            print(f"  WARNING: original_labels Geometry {i} is None. Skipping.")
+            continue
+
+        if not geom.is_valid:
+            invalid_original_count += 1
+            print(f"  WARNING: original_labels Geometry {i} ({geom.geom_type}) is invalid.")
+            # print(f"  Invalid reason: {geom.is_valid_reason}") # Uncomment for more detail if GEOS >= 3.3.0
+
+            fixed_geom = geom.buffer(0) # Attempt to fix
+            if fixed_geom.is_valid:
+                valid_original_geometries.append(fixed_geom)
+                print(f"  Successfully fixed original_labels Geometry {i} with buffer(0).")
+            else:
+                print(f"  ERROR: original_labels Geometry {i} remains invalid after buffer(0). Skipping this geometry.")
+                # You might log the problematic geometry WKT here if needed:
+                # print(f"  Problematic geometry WKT: {geom.wkt}")
+        else:
+            valid_original_geometries.append(geom)
+
+    print(f"--- Finished original_labels validation. Found {invalid_original_count} invalid geometries. ---")
+
+    if not valid_original_geometries:
+        print("WARNING: No valid original_labels geometries found for unary_union. Original_union will be empty.")
+        original_union = GeometryCollection() # Use an empty geometry collection
+    else:
+        try:
+            original_union = unary_union(valid_original_geometries)
+            print("Successfully performed unary_union on original_labels.")
+        except shapely.errors.GEOSException as e:
+            print(f"CRITICAL ERROR: GEOSException during unary_union for original_labels even after validation/fix: {e}")
+            print("Returning empty GeometryCollection for original_union to prevent script crash.")
+            original_union = GeometryCollection() # Fallback to empty if union still fails
+    # --- End of adapted code for original_union ---
+
+
+    # --- Start of adapted code for known_union ---
+    print("\n--- Starting geometry validation for merged.geometry (known_union) ---")
+    valid_merged_geometries = []
+    invalid_merged_count = 0
+
+    geometries_to_process_merged = merged.geometry
+
+    for i, geom in enumerate(geometries_to_process_merged):
+        if geom is None:
+            print(f"  WARNING: merged Geometry {i} is None. Skipping.")
+            continue
+
+        if not geom.is_valid:
+            invalid_merged_count += 1
+            print(f"  WARNING: merged Geometry {i} ({geom.geom_type}) is invalid.")
+            fixed_geom = geom.buffer(0) # Attempt to fix
+            if fixed_geom.is_valid:
+                valid_merged_geometries.append(fixed_geom)
+                print(f"  Successfully fixed merged Geometry {i} with buffer(0).")
+            else:
+                print(f"  ERROR: merged Geometry {i} remains invalid after buffer(0). Skipping this geometry.")
+        else:
+            valid_merged_geometries.append(geom)
+
+    print(f"--- Finished merged.geometry validation. Found {invalid_merged_count} invalid geometries. ---")
+
+    if not valid_merged_geometries:
+        print("WARNING: No valid merged geometries found for unary_union. Known_union will be empty.")
+        known_union = GeometryCollection() # Use an empty geometry collection
+    else:
+        try:
+            known_union = unary_union(valid_merged_geometries)
+            print("Successfully performed unary_union on merged (known_union).")
+        except shapely.errors.GEOSException as e:
+            print(f"CRITICAL ERROR: GEOSException during unary_union for merged (known_union) even after validation/fix: {e}")
+            print("Returning empty GeometryCollection for known_union to prevent script crash.")
+            known_union = GeometryCollection() # Fallback to empty if union still fails
+    # --- End of adapted code for known_union ---
+
+
+    not_inundated_polys = []
+    for tile_geom in tiles.geometry:
+        if not tile_geom.is_valid: # Check tile geometry validity too
+            print(f"  WARNING: Tile geometry is invalid. Attempting buffer(0).")
+            tile_geom = tile_geom.buffer(0)
+            if not tile_geom.is_valid:
+                print(f"  ERROR: Tile geometry remains invalid. Skipping this tile.")
+                continue
+
+        # Handle intersection with potentially empty original_union
+        if original_union.is_empty:
+            # If original_union is empty, no tile can intersect it meaningfully for this logic
+            continue
+
+        # Use try-except for intersection as well
+        try:
+            if not tile_geom.intersects(original_union):
+                continue
+        except shapely.errors.GEOSException as e:
+            print(f"  WARNING: GEOSException during tile_geom.intersects(original_union): {e}")
+            print(f"  Skipping intersection check for this tile due to error.")
+            continue
+
+        # Handle difference with potentially empty known_union
+        if known_union.is_empty:
+            # If known_union is empty, the leftover is simply the intersecting part of the tile
+            try:
+                leftover = tile_geom.intersection(original_union) # Intersect with original_union if nothing known
+            except shapely.errors.GEOSException as e:
+                print(f"  WARNING: GEOSException during tile_geom.intersection(original_union): {e}")
+                print(f"  Skipping leftover calculation for this tile due to error.")
+                continue
+        else:
+            # Use try-except for difference as well
+            try:
+                leftover = tile_geom.difference(known_union)
+            except shapely.errors.GEOSException as e:
+                print(f"  WARNING: GEOSException during tile_geom.difference(known_union): {e}")
+                print(f"  Skipping leftover calculation for this tile due to error.")
+                continue
+
+        if not leftover.is_empty:
+            # Ensure leftover is valid before adding
+            if not leftover.is_valid:
+                print(f"  WARNING: Leftover geometry is invalid. Attempting buffer(0).")
+                leftover = leftover.buffer(0)
+                if not leftover.is_valid:
+                    print(f"  ERROR: Leftover geometry remains invalid. Skipping this leftover.")
+                    continue
+            not_inundated_polys.append(leftover)
+
+    if not_inundated_polys:
+        # Before creating GeoDataFrame, make sure all geometries are handled for MultiPolygons
+        # explode any MultiPolygons into individual Polygons if they exist
+        exploded_not_inundated_polys = []
+        for poly_or_multi in not_inundated_polys:
+            if poly_or_multi.geom_type == 'MultiPolygon':
+                for single_poly in poly_or_multi.geoms:
+                    exploded_not_inundated_polys.append(single_poly)
+            else:
+                exploded_not_inundated_polys.append(poly_or_multi)
+
+        not_inundated_gdf = gpd.GeoDataFrame(
+            {"Label": ["Not inundated"] * len(exploded_not_inundated_polys), "geometry": exploded_not_inundated_polys},
             crs=merged.crs
         )
         not_inundated_gdf = fix_g(not_inundated_gdf)
@@ -152,32 +313,43 @@ if __name__ == "__main__":
     #folder_path = image_dir / 'Kloosterbeemden' / '2020'
     #folder_path = image_dir / 'Kloosterbeemden' / '2021'
     #folder_path = image_dir / 'Kloosterbeemden' / '2023'
-    folder_path = image_dir / 'Kloosterbeemden' / '2024'
+    #folder_path = image_dir / 'Kloosterbeemden' / '2024'
 
     #folder_path = image_dir / 'Schulensmeer' / '2020'
     #folder_path = image_dir / 'Schulensmeer' / '2021'
     #folder_path = image_dir / 'Schulensmeer' / '2023'
     #folder_path = image_dir / 'Schulensmeer' / '2024'
 
+    folder_path = image_dir / 'Webbekomsbroek' / '2020'
+    #folder_path = image_dir / 'Webbekomsbroek' / '2021'
+    #folder_path = image_dir / 'Webbekomsbroek' / '2023'
+    #folder_path = image_dir / 'Webbekomsbroek' / '2024'
 
-    tiles_path = workdir / 'Tiles_ortho_KB_buffer_selected.shp'
+
+    #tiles_path = workdir / 'Tiles_ortho_KB_buffer_selected.shp'
     #tiles_path = workdir / 'Tiles_ortho_SM_buffer_selected.shp'
+    tiles_path = workdir / 'Tiles_ortho_WB_buffer_selected.shp'
 
     #output_file = workdir / 'Labels_KB_2020.shp'
     #output_file = workdir / 'Labels_KB_2021.shp'
     #output_file = workdir / 'Labels_KB_2023.shp'
-    output_file = workdir / 'Labels_KB_2024.shp'
+    #output_file = workdir / 'Labels_KB_2024.shp'
 
     #output_file = workdir / 'Labels_SM_2020.shp'
     #output_file = workdir / 'Labels_SM_2021.shp'
     #output_file = workdir / 'Labels_SM_2023.shp'
     #output_file = workdir / 'Labels_SM_2024.shp'
 
+    output_file = workdir / 'Labels_WB_2020.shp'
+    #output_file = workdir / 'Labels_WB_2021.shp'
+    #output_file = workdir / 'Labels_WB_2023.shp'
+    #output_file = workdir / 'Labels_WB_2024.shp'
+
     # Step 1: Transform JSON shapes to GeoDataFrame & get only matching tiles
     labels, used_tiles = process_json_and_save_geometries(tiles_path, folder_path)
 
     # Step 2: Define label priority
-    label_map = { # Labelmap for "Kloosterbeemden"
+    label_map = { # Labelmap for "Kloosterbeemden" and "Webbekomsbroek"
         4: "Inundated",
         3: "Other",
         2: "Reeds",
