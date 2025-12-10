@@ -326,9 +326,9 @@ if __name__ == "__main__":
     #folder_path = image_dir / 'Webbekomsbroek' / '2024'
 
     #folder_path = image_dir / 'Webbekomsbroek2' / '2020'
-    #folder_path = image_dir / 'Webbekomsbroek2' / '2021'
+    folder_path = image_dir / 'Webbekomsbroek2' / '2021'
     #folder_path = image_dir / 'Webbekomsbroek2' / '2023'
-    folder_path = image_dir / 'Webbekomsbroek2' / '2024'
+    #folder_path = image_dir / 'Webbekomsbroek2' / '2024'
 
     #tiles_path = workdir / 'Tiles_ortho_KB_buffer_selected.shp'
     #tiles_path = workdir / 'Tiles_ortho_SM_buffer_selected.shp'
@@ -351,9 +351,9 @@ if __name__ == "__main__":
     #output_file = workdir / 'Labels_WB_2024.shp'
 
     #output_file = workdir / 'Labels_WB_2020_2.shp'
-    #output_file = workdir / 'Labels_WB_2021_2.shp'
+    output_file = workdir / 'Labels_WB_2021_2.shp'
     #output_file = workdir / 'Labels_WB_2023_2.shp'
-    output_file = workdir / 'Labels_WB_2024_2.shp'
+    #output_file = workdir / 'Labels_WB_2024_2.shp'
 
     # Step 1: Transform JSON shapes to GeoDataFrame & get only matching tiles
     labels, used_tiles = process_json_and_save_geometries(tiles_path, folder_path)
@@ -362,7 +362,7 @@ if __name__ == "__main__":
     label_map = { # Labelmap for "Kloosterbeemden" and "Webbekomsbroek"
         4: "Inundated",
         3: "Other",
-        2: "Reeds",
+        2: "Reed",
         1: "Uncertain"
     }
 
